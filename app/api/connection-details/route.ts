@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { AccessToken, type AccessTokenOptions, type VideoGrant } from 'livekit-server-sdk';
+import { RoomServiceClient } from 'livekit-server-sdk';
 import { RoomConfiguration } from '@livekit/protocol';
 
 type ConnectionDetails = {
@@ -29,14 +30,45 @@ export async function POST(req: Request) {
       throw new Error('LIVEKIT_API_SECRET is not defined');
     }
 
-    // Parse agent configuration from request body
+    // Parse agent configuration and session_id from request body
     const body = await req.json();
     const agentName: string = body?.room_config?.agents?.[0]?.agent_name;
+    const sessionId: string | undefined = body?.session_id;
+
+    // Validate that session_id is provided
+    if (!sessionId || sessionId.trim() === '') {
+      return new NextResponse('Session ID is required. Please include session_id in the request.', { status: 400 });
+    }
 
     // Generate participant token
     const participantName = 'user';
     const participantIdentity = `voice_assistant_user_${Math.floor(Math.random() * 10_000)}`;
     const roomName = `voice_assistant_room_${Math.floor(Math.random() * 10_000)}`;
+
+    // Create room with metadata
+    if (LIVEKIT_URL && API_KEY && API_SECRET) {
+      try {
+        const roomService = new RoomServiceClient(LIVEKIT_URL, API_KEY, API_SECRET);
+        const roomMetadata = JSON.stringify({ session_id: sessionId });
+        await roomService.createRoom({
+          name: roomName,
+          metadata: roomMetadata,
+        });
+      } catch (error) {
+        // If room already exists, update its metadata instead
+        if (error instanceof Error && (error.message.includes('already exists') || error.message.includes('room exists'))) {
+          try {
+            const roomService = new RoomServiceClient(LIVEKIT_URL, API_KEY, API_SECRET);
+            const roomMetadata = JSON.stringify({ session_id: sessionId });
+            await roomService.updateRoomMetadata(roomName, roomMetadata);
+          } catch (updateError) {
+            console.error('Failed to update room metadata:', updateError);
+          }
+        } else {
+          console.error('Failed to create room with metadata:', error);
+        }
+      }
+    }
 
     const participantToken = await createParticipantToken(
       { identity: participantIdentity, name: participantName },
