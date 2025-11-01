@@ -20,11 +20,13 @@ function WelcomeImage() {
 
 interface WelcomeViewProps {
   startButtonText: string;
+  hasSessionId: boolean;
   onStartCall: () => void;
 }
 
 export const WelcomeView = ({
   startButtonText,
+  hasSessionId,
   onStartCall,
   ref,
 }: React.ComponentProps<'div'> & WelcomeViewProps) => {
@@ -37,7 +39,19 @@ export const WelcomeView = ({
           Chat live with your voice AI agent
         </p>
 
-        <Button variant="primary" size="lg" onClick={onStartCall} className="mt-6 w-64 font-mono">
+        {!hasSessionId && (
+          <p className="text-destructive mt-4 text-sm font-medium">
+            Error: Session ID is required.
+          </p>
+        )}
+
+        <Button 
+          variant="primary" 
+          size="lg" 
+          onClick={onStartCall} 
+          disabled={!hasSessionId}
+          className="mt-6 w-64 font-mono"
+        >
           {startButtonText}
         </Button>
       </section>

@@ -7,6 +7,15 @@ export function useRoom(appConfig: AppConfig) {
   const aborted = useRef(false);
   const room = useMemo(() => new Room(), []);
   const [isSessionActive, setIsSessionActive] = useState(false);
+  const [hasSessionId, setHasSessionId] = useState(false);
+  
+  // Check if session_id exists in URL (client-side only, after mount)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      setHasSessionId(searchParams.get('session_id') !== null);
+    }
+  }, []);
 
   useEffect(() => {
     function onDisconnected() {
@@ -44,6 +53,11 @@ export function useRoom(appConfig: AppConfig) {
           window.location.origin
         );
 
+        // Extract session_id from URL query parameters
+        const sessionId = typeof window !== 'undefined' 
+          ? new URLSearchParams(window.location.search).get('session_id')
+          : null;
+
         try {
           const res = await fetch(url.toString(), {
             method: 'POST',
@@ -52,6 +66,7 @@ export function useRoom(appConfig: AppConfig) {
               'X-Sandbox-Id': appConfig.sandboxId ?? '',
             },
             body: JSON.stringify({
+              session_id: sessionId ?? undefined,
               room_config: appConfig.agentName
                 ? {
                     agents: [{ agent_name: appConfig.agentName }],
@@ -69,6 +84,15 @@ export function useRoom(appConfig: AppConfig) {
   );
 
   const startSession = useCallback(() => {
+    // Validate that session_id is present
+    if (!hasSessionId) {
+      toastAlert({
+        title: 'Session ID Required',
+        description: 'A session ID is required to start the session.',
+      });
+      return;
+    }
+
     setIsSessionActive(true);
 
     if (room.state === 'disconnected') {
@@ -98,11 +122,11 @@ export function useRoom(appConfig: AppConfig) {
         });
       });
     }
-  }, [room, appConfig, tokenSource]);
+  }, [room, appConfig, tokenSource, hasSessionId]);
 
   const endSession = useCallback(() => {
     setIsSessionActive(false);
   }, []);
 
-  return { room, isSessionActive, startSession, endSession };
+  return { room, isSessionActive, startSession, endSession, hasSessionId };
 }
