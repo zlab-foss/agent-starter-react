@@ -8,7 +8,7 @@ export function useRoom(appConfig: AppConfig) {
   const room = useMemo(() => new Room(), []);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [hasSessionId, setHasSessionId] = useState(false);
-  
+
   // Check if session_id exists in URL (client-side only, after mount)
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -53,10 +53,11 @@ export function useRoom(appConfig: AppConfig) {
           window.location.origin
         );
 
-        // Extract session_id from URL query parameters
-        const sessionId = typeof window !== 'undefined' 
-          ? new URLSearchParams(window.location.search).get('session_id')
-          : null;
+        // Extract session_id and lang from URL query parameters
+        const searchParams =
+          typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+        const sessionId = searchParams?.get('session_id') ?? null;
+        const lang = searchParams?.get('lang') ?? null;
 
         try {
           const res = await fetch(url.toString(), {
@@ -67,6 +68,7 @@ export function useRoom(appConfig: AppConfig) {
             },
             body: JSON.stringify({
               session_id: sessionId ?? undefined,
+              lang: lang ?? undefined,
               room_config: appConfig.agentName
                 ? {
                     agents: [{ agent_name: appConfig.agentName }],
