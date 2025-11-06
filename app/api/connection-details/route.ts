@@ -30,14 +30,17 @@ export async function POST(req: Request) {
       throw new Error('LIVEKIT_API_SECRET is not defined');
     }
 
-    // Parse agent configuration and session_id from request body
+    // Parse agent configuration, session_id, and lang from request body
     const body = await req.json();
     const agentName: string = body?.room_config?.agents?.[0]?.agent_name;
     const sessionId: string | undefined = body?.session_id;
+    const lang: string | undefined = body?.lang;
 
     // Validate that session_id is provided
     if (!sessionId || sessionId.trim() === '') {
-      return new NextResponse('Session ID is required. Please include session_id in the request.', { status: 400 });
+      return new NextResponse('Session ID is required. Please include session_id in the request.', {
+        status: 400,
+      });
     }
 
     // Generate participant token
@@ -49,17 +52,26 @@ export async function POST(req: Request) {
     if (LIVEKIT_URL && API_KEY && API_SECRET) {
       try {
         const roomService = new RoomServiceClient(LIVEKIT_URL, API_KEY, API_SECRET);
-        const roomMetadata = JSON.stringify({ session_id: sessionId });
+        const roomMetadata = JSON.stringify({
+          session_id: sessionId,
+          ...(lang && { lang }),
+        });
         await roomService.createRoom({
           name: roomName,
           metadata: roomMetadata,
         });
       } catch (error) {
         // If room already exists, update its metadata instead
-        if (error instanceof Error && (error.message.includes('already exists') || error.message.includes('room exists'))) {
+        if (
+          error instanceof Error &&
+          (error.message.includes('already exists') || error.message.includes('room exists'))
+        ) {
           try {
             const roomService = new RoomServiceClient(LIVEKIT_URL, API_KEY, API_SECRET);
-            const roomMetadata = JSON.stringify({ session_id: sessionId });
+            const roomMetadata = JSON.stringify({
+              session_id: sessionId,
+              ...(lang && { lang }),
+            });
             await roomService.updateRoomMetadata(roomName, roomMetadata);
           } catch (updateError) {
             console.error('Failed to update room metadata:', updateError);
