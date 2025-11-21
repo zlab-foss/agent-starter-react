@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
+    "build:docker": "NEXT_LINT_IGNORE=1 next build",
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write .",
