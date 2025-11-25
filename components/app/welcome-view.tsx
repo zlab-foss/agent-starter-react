@@ -45,10 +45,10 @@ export const WelcomeView = ({
           </p>
         )}
 
-        <Button 
-          variant="primary" 
-          size="lg" 
-          onClick={onStartCall} 
+        <Button
+          variant="primary"
+          size="lg"
+          onClick={onStartCall}
           disabled={!hasSessionId}
           className="mt-6 w-64 font-mono"
         >

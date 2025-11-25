@@ -13,7 +13,8 @@ type ConnectionDetails = {
 // NOTE: you are expected to define the following environment variables in `.env.local`:
 const API_KEY = process.env.LIVEKIT_API_KEY;
 const API_SECRET = process.env.LIVEKIT_API_SECRET;
-const LIVEKIT_URL = process.env.LIVEKIT_URL;
+const LIVEKIT_URL = process.env.LIVEKIT_URL; // Server-side connection to LiveKit
+const LIVEKIT_URL_CLIENT = process.env.NEXT_PUBLIC_LIVEKIT_URL; // Browser connection to LiveKit
 
 // don't cache the results
 export const revalidate = 0;
@@ -90,7 +91,7 @@ export async function POST(req: Request) {
 
     // Return connection details
     const data: ConnectionDetails = {
-      serverUrl: LIVEKIT_URL,
+      serverUrl: LIVEKIT_URL_CLIENT || LIVEKIT_URL, // Browser uses client URL
       roomName,
       participantToken: participantToken,
       participantName,
